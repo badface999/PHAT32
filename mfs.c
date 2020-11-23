@@ -48,7 +48,8 @@ void bpb(int16_t BytesPerSec, int8_t SecPerClus, int16_t RsvdSecCnt, int8_t NumF
 int main()
 {
 	char * cmd_str = (char*) malloc( MAX_COMMAND_SIZE );
-
+	
+	/* Made the variables static so that we can keep the data stored in them outside scope*/
 	static FILE *fp;
 	static int16_t BPB_BytesPerSec;
 	static int8_t BPB_SecPerClus;
@@ -123,19 +124,28 @@ int main()
 			fread(&BPB_FATz32, 4, 1, fp);
 			
 		}
+
+		/* Close File */
 		else if(strcmp(token[0], "close") == 0)
 		{
 			fclose(fp);
-			fp = NULL;
+			fp = NULL; //set the file pointer to NULL so that we can check later if the user has opened the img 
+
 		}
+
+		/* Prints bpb command*/
 		else if(token[0] != NULL && strcmp(token[0], "bpb") == 0)
 		{
 			bpb(BPB_BytesPerSec, BPB_SecPerClus, BPB_RsvdSecCnt, BPB_NumFATS, BPB_FATz32);
 		}
+		
+		/* Checks and tells the user that the img has not been opened yet */
 		else if(fp == NULL && token!= NULL)
 		{
 			printf("Error: First system image must be opened first\n");
 		}
+		
+		/* Prints error message in case user enter an improper command after they open the img */ 
 		else printf("Error: command not found\n");
 		free(working_root);		
 	}
