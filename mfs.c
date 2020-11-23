@@ -123,11 +123,20 @@ int main()
 			fread(&BPB_FATz32, 4, 1, fp);
 			
 		}
+		else if(strcmp(token[0], "close") == 0)
+		{
+			fclose(fp);
+			fp = NULL;
+		}
 		else if(token[0] != NULL && strcmp(token[0], "bpb") == 0)
 		{
 			bpb(BPB_BytesPerSec, BPB_SecPerClus, BPB_RsvdSecCnt, BPB_NumFATS, BPB_FATz32);
 		}
-
+		else if(fp == NULL && token!= NULL)
+		{
+			printf("Error: First system image must be opened first\n");
+		}
+		else printf("Error: command not found\n");
 		free(working_root);		
 	}
 	return 0;
