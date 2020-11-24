@@ -84,7 +84,7 @@ struct DirectoryEntry dir[16];
 int main()
 {
 	char *cmd_str = (char *)malloc(MAX_COMMAND_SIZE);
-
+	int i;
 	/* Made the variables static so that we can keep the data stored in them outside scope*/
 
 	while (1)
@@ -194,14 +194,29 @@ int main()
 			 */
 			else if (strcmp(token[0], "ls") == 0)
 			{
-				int i = 0;
 				for (i = 0; i < 16; i++) //16 since we're reading all the blocks
 				{
 					if (dir[i].DIR_Attr == 0x01 || dir[i].DIR_Attr == 0x10 || dir[i].DIR_Attr == 0x20)
 					{
-						printf("%s\n", dir[i].DIR_Name);
+						printf("%s\n", dir[i].DIR_Name); //name will print out with garbage TODO
 					}
 				}
+			}
+			else if (strcmp(token[0], "cd") == 0) //cd only and that means that we're going back into the home directory
+			{
+				fseek(fp, Root_Directory_Address, SEEK_SET);
+				fread(dir, 16, sizeof(struct DirectoryEntry), fp);
+				for (i = 0; i < 16; i++) //going through all the blocks
+				{
+					if (dir[i].DIR_Attr == 0x10) //need to check if the user's input matches the name
+					{
+						printf("%s\n", dir[i].DIR_Name); //set a variable to this since this is a name for the folder
+					}
+				}
+			}
+			else if (strcmp(token[0], "quit") == 0 || strcmp(token[0], "exit") == 0) //these are the commands to exit from the program
+			{
+				exit(0);
 			}
 			/* Prints error message in case user enter an improper command after they open the img */
 			else
