@@ -3,10 +3,6 @@
   ID:  & 1001587603
 */
 
-
-
-
-
 #define _GNU_SOURCE
 
 #include <stdio.h>
@@ -20,14 +16,20 @@
 
 #define MAX_NUM_ARGUMENTS 3
 
-#define WHITESPACE " \t\n"      // We want to split our command line up into tokens
-                                // so we need to define what delimits our tokens.
-								// In this case  white space
-							    // will separate the tokens on our command line
-								 
-#define MAX_COMMAND_SIZE 255    // The maximum command-line size
+#define WHITESPACE " \t\n" // We want to split our command line up into tokens \
+						   // so we need to define what delimits our tokens.   \
+						   // In this case  white space                        \
+						   // will separate the tokens on our command line
 
+#define MAX_COMMAND_SIZE 255 // The maximum command-line size
 
+FILE *fp;
+int16_t BPB_BytesPerSec;
+int8_t BPB_SecPerClus;
+int16_t BPB_RsvdSecCnt;
+int8_t BPB_NumFATS;
+int32_t BPB_FATz32;
+int32_t Root_Directory_Address;
 
 /*function to print bpb data */
 void bpb(int16_t BytesPerSec, int8_t SecPerClus, int16_t RsvdSecCnt, int8_t NumFats, int32_t BPB_FATz32)
@@ -37,7 +39,7 @@ void bpb(int16_t BytesPerSec, int8_t SecPerClus, int16_t RsvdSecCnt, int8_t NumF
 
 	printf("BPB_SecPerClus: %d\n", SecPerClus);
 	printf("BPB_SecPerClus: %x\n\n", SecPerClus);
-	
+
 	printf("BPB_RsvdSecCnt: %d\n", RsvdSecCnt);
 	printf("BPB_RsvdSecCnt: %x\n\n", RsvdSecCnt);
 
@@ -48,7 +50,25 @@ void bpb(int16_t BytesPerSec, int8_t SecPerClus, int16_t RsvdSecCnt, int8_t NumF
 	printf("BPB_FATz32: %x\n\n", BPB_FATz32);
 }
 
-struct __attribute__ ((__packed__)) DirectoryEntry 
+//given block, look up into the furst FAT and retrn the block address of teh block in the file. if there's no further blocks -1
+int16_t NextLB(uint32_t sector)
+{
+	uint32_t FATAddress = (BPB_BytesPerSec * BPB_RsvdSecCnt) + (sector * 4);
+	int16_t val;
+	fseek(fp, FATAddress, SEEK_SET);
+	fread(&val, 2, 1, fp);
+	return val;
+}
+
+//Parameters - current sector number that points to the block of data
+//Returns - The value of the address for that block of data
+//Description - finds the starting address of a block of data given the sector number corrosponding to that data block
+int LBAToOffset(int32_t sector)
+{
+	return ((sector - 2) * BPB_BytesPerSec) + (BPB_BytesPerSec * BPB_RsvdSecCnt) + (BPB_NumFATS * BPB_FATz32 * BPB_BytesPerSec);
+}
+
+struct __attribute__((__packed__)) DirectoryEntry
 {
 	char DIR_Name[11];
 	uint8_t DIR_Attr;
@@ -63,26 +83,21 @@ struct DirectoryEntry dir[16];
 
 int main()
 {
-	char * cmd_str = (char*) malloc( MAX_COMMAND_SIZE );
-	
+	char *cmd_str = (char *)malloc(MAX_COMMAND_SIZE);
+
 	/* Made the variables static so that we can keep the data stored in them outside scope*/
-	static FILE *fp;
-	static int16_t BPB_BytesPerSec;
-	static int8_t BPB_SecPerClus;
-	static int16_t BPB_RsvdSecCnt;
-	static int8_t BPB_NumFATS;
-	static int32_t BPB_FATz32;
-	static int32_t Root_Directory_Address; 
-	while ( 1 )
+
+	while (1)
 	{
 		// Print out the mfs promp
 		printf("mfs> ");
 
-		// Read the command from the commandline. The 
+		// Read the command from the commandline. The
 		// maximum command that will be read is MAX_COMMAND_SIZE
 		// input something since fgets returns NULL when there
 		// is no input
-		while( !fgets (cmd_str, MAX_COMMAND_SIZE, stdin) );
+		while (!fgets(cmd_str, MAX_COMMAND_SIZE, stdin))
+			;
 
 		/* Parse input */
 		char *token[MAX_NUM_ARGUMENTS];
@@ -94,21 +109,21 @@ int main()
 
 		char *arg_ptr;
 
-		char *working_str = strdup( cmd_str );
+		char *working_str = strdup(cmd_str);
 
 		// we are going to move the working_str pointer so
 		// keep track of its original value so we can deallocate
-		// the correct amount at the end 
+		// the correct amount at the end
 
 		char *working_root = working_str;
 
 		// Tokenize the input stringswith whitespace used as the delimiter
 
-		while( ( ( arg_ptr = strsep(&working_str, WHITESPACE) ) != NULL ) &&
-					(token_count<MAX_NUM_ARGUMENTS))
+		while (((arg_ptr = strsep(&working_str, WHITESPACE)) != NULL) &&
+			   (token_count < MAX_NUM_ARGUMENTS))
 		{
-			token[token_count] = strndup( arg_ptr, MAX_COMMAND_SIZE );
-			if(strlen (token[token_count]) == 0)
+			token[token_count] = strndup(arg_ptr, MAX_COMMAND_SIZE);
+			if (strlen(token[token_count]) == 0)
 			{
 				token[token_count] = NULL;
 			}
@@ -117,10 +132,10 @@ int main()
 
 		// Now print the tokenized input as a debug check
 		// \TODO Remove this code and replace with your FAT32 functinoality
-		if(token[0] != NULL)
+		if (token[0] != NULL)
 		{
 
-			if(token[0] != NULL && token[1] != NULL && strcmp(token[0], "open" )  == 0 && strcmp(token[1], "fat32.img" ) == 0 && fp == NULL)
+			if (token[0] != NULL && token[1] != NULL && strcmp(token[0], "open") == 0 && strcmp(token[1], "fat32.img") == 0 && fp == NULL)
 			{
 
 				fp = fopen("fat32.img", "r+");
@@ -139,7 +154,7 @@ int main()
 
 				fseek(fp, 36, SEEK_SET);
 				fread(&BPB_FATz32, 4, 1, fp);
-			
+
 				/*
 				 * Getting the root directory address and then we are fseeking to that address.
 				 *
@@ -147,24 +162,24 @@ int main()
 				 */
 				Root_Directory_Address = (BPB_NumFATS * BPB_FATz32 * BPB_BytesPerSec) + (BPB_RsvdSecCnt * BPB_BytesPerSec);
 				fseek(fp, Root_Directory_Address, SEEK_SET);
-				fread(dir, 16, sizeof(struct DirectoryEntry), fp);				
+				fread(dir, 16, sizeof(struct DirectoryEntry), fp);
 			}
-		
+
 			/* Checks and tells the user that the img has not been opened yet */
-			else if(fp == NULL)
+			else if (fp == NULL)
 			{
 				printf("Error: First system image must be opened first\n");
 				continue;
 			}
 			/* Close File */
-			else if(strcmp(token[0], "close") == 0)
+			else if (strcmp(token[0], "close") == 0)
 			{
 				fclose(fp);
-				fp = NULL; //set the file pointer to NULL so that we can check later if the user has opened the img 
+				fp = NULL; //set the file pointer to NULL so that we can check later if the user has opened the img
 			}
 
 			/* Prints bpb command*/
-			else if(token[0] != NULL && strcmp(token[0], "bpb") == 0)
+			else if (token[0] != NULL && strcmp(token[0], "bpb") == 0)
 			{
 				bpb(BPB_BytesPerSec, BPB_SecPerClus, BPB_RsvdSecCnt, BPB_NumFATS, BPB_FATz32);
 			}
@@ -176,25 +191,24 @@ int main()
 			 * can be in a directory.
 			 *
 			 * We then print out the name of the "file" at each iteration. 
-			 */ 
-			else if(strcmp(token[0], "ls") == 0)
+			 */
+			else if (strcmp(token[0], "ls") == 0)
 			{
 				int i = 0;
-				for(i = 0; i < 16; i++)
+				for (i = 0; i < 16; i++) //16 since we're reading all the blocks
 				{
-					if(dir[i].DIR_Attr == 0x01 || dir[i].DIR_Attr == 0x10 || dir[i].DIR_Attr == 0x02)
+					if (dir[i].DIR_Attr == 0x01 || dir[i].DIR_Attr == 0x10 || dir[i].DIR_Attr == 0x20)
 					{
 						printf("%s\n", dir[i].DIR_Name);
 					}
 				}
-			}	
-		
-			/* Prints error message in case user enter an improper command after they open the img */ 
-			else printf("Error: command not found\n");
+			}
+			/* Prints error message in case user enter an improper command after they open the img */
+			else
+				printf("Error: command not found\n");
 		}
-		
 
-		free(working_root);		
+		free(working_root);
 	}
-	return 0; 
+	return 0;
 }
