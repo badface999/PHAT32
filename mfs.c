@@ -45,6 +45,19 @@ void bpb(int16_t BytesPerSec, int8_t SecPerClus, int16_t RsvdSecCnt, int8_t NumF
 	printf("BPB_FATz32: %x\n\n", BPB_FATz32);
 }
 
+struct __attribute__ ((__packed__)) DirectoryEntry 
+{
+	char DIR_Name[11];
+	uint8_t DIR_Attr;
+	uint8_t Unused[8];
+	uint16_t DIR_FirstCluserHigh;
+	uint8_t Unused2[4];
+	uint16_t DIR_FirstCluserLow;
+	uint32_t DIR_FileSize;
+};
+
+struct DirectoryEntry dir[16];
+
 int main()
 {
 	char * cmd_str = (char*) malloc( MAX_COMMAND_SIZE );
@@ -140,7 +153,7 @@ int main()
 		}
 		
 		/* Checks and tells the user that the img has not been opened yet */
-		else if(fp == NULL && token!= NULL)
+		else if(fp == NULL && cmd_str != NULL)
 		{
 			printf("Error: First system image must be opened first\n");
 		}
