@@ -50,9 +50,9 @@ struct __attribute__ ((__packed__)) DirectoryEntry
 	char DIR_Name[11];
 	uint8_t DIR_Attr;
 	uint8_t Unused[8];
-	uint16_t DIR_FirstCluserHigh;
+	uint16_t DIR_FirstClusterHigh;
 	uint8_t Unused2[4];
-	uint16_t DIR_FirstCluserLow;
+	uint16_t DIR_FirstClusterLow;
 	uint32_t DIR_FileSize;
 };
 
