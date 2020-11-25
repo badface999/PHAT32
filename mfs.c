@@ -27,6 +27,9 @@
 								 
 #define MAX_COMMAND_SIZE 255    // The maximum command-line size
 
+
+
+/*function to print bpb data */
 void bpb(int16_t BytesPerSec, int8_t SecPerClus, int16_t RsvdSecCnt, int8_t NumFats, int32_t BPB_FATz32)
 {
 	printf("BPB_BytesPerSec: %d\n", BytesPerSec);
@@ -69,6 +72,7 @@ int main()
 	static int16_t BPB_RsvdSecCnt;
 	static int8_t BPB_NumFATS;
 	static int32_t BPB_FATz32;
+	static int32_t Root_Directory_Address; 
 	while ( 1 )
 	{
 		// Print out the mfs promp
@@ -113,54 +117,84 @@ int main()
 
 		// Now print the tokenized input as a debug check
 		// \TODO Remove this code and replace with your FAT32 functinoality
-
-
-
-		if(token[0] != NULL && token[1] != NULL && strcmp(token[0], "open" )  == 0 && strcmp(token[1], "fat32.img" ) == 0)
+		if(token[0] != NULL)
 		{
-			fp = fopen("fat32.img", "r+");
 
+			if(token[0] != NULL && token[1] != NULL && strcmp(token[0], "open" )  == 0 && strcmp(token[1], "fat32.img" ) == 0 && fp == NULL)
+			{
 
-			fseek(fp, 11, SEEK_SET);
-			fread(&BPB_BytesPerSec, 2, 1, fp);
+				fp = fopen("fat32.img", "r+");
 
-			fseek(fp, 13, SEEK_SET);
-			fread(&BPB_SecPerClus, 1, 1, fp);
+				fseek(fp, 11, SEEK_SET);
+				fread(&BPB_BytesPerSec, 2, 1, fp);
 
-			fseek(fp, 14, SEEK_SET);
-			fread(&BPB_RsvdSecCnt, 2, 1, fp);
+				fseek(fp, 13, SEEK_SET);
+				fread(&BPB_SecPerClus, 1, 1, fp);
 
-			fseek(fp, 16, SEEK_SET);
-			fread(&BPB_NumFATS, 1, 1, fp);
+				fseek(fp, 14, SEEK_SET);
+				fread(&BPB_RsvdSecCnt, 2, 1, fp);
 
-			fseek(fp, 36, SEEK_SET);
-			fread(&BPB_FATz32, 4, 1, fp);
+				fseek(fp, 16, SEEK_SET);
+				fread(&BPB_NumFATS, 1, 1, fp);
+
+				fseek(fp, 36, SEEK_SET);
+				fread(&BPB_FATz32, 4, 1, fp);
 			
-		}
+				/*
+				 * Getting the root directory address and then we are fseeking to that address.
+				 *
+				 * Then we read a directory entry 16 times sequentially store the data into the dir array of structs
+				 */
+				Root_Directory_Address = (BPB_NumFATS * BPB_FATz32 * BPB_BytesPerSec) + (BPB_RsvdSecCnt * BPB_BytesPerSec);
+				fseek(fp, Root_Directory_Address, SEEK_SET);
+				fread(dir, 16, sizeof(struct DirectoryEntry), fp);				
+			}
+		
+			/* Checks and tells the user that the img has not been opened yet */
+			else if(fp == NULL)
+			{
+				printf("Error: First system image must be opened first\n");
+				continue;
+			}
+			/* Close File */
+			else if(strcmp(token[0], "close") == 0)
+			{
+				fclose(fp);
+				fp = NULL; //set the file pointer to NULL so that we can check later if the user has opened the img 
+			}
 
-		/* Close File */
-		else if(strcmp(token[0], "close") == 0)
-		{
-			fclose(fp);
-			fp = NULL; //set the file pointer to NULL so that we can check later if the user has opened the img 
+			/* Prints bpb command*/
+			else if(token[0] != NULL && strcmp(token[0], "bpb") == 0)
+			{
+				bpb(BPB_BytesPerSec, BPB_SecPerClus, BPB_RsvdSecCnt, BPB_NumFATS, BPB_FATz32);
+			}
 
-		}
-
-		/* Prints bpb command*/
-		else if(token[0] != NULL && strcmp(token[0], "bpb") == 0)
-		{
-			bpb(BPB_BytesPerSec, BPB_SecPerClus, BPB_RsvdSecCnt, BPB_NumFATS, BPB_FATz32);
+			/* 
+			 * Statement for when the user wants to list what's in the current directory.
+			 *
+			 * We will iterate a for loop 16 times becuase that's how many "files" can be 
+			 * can be in a directory.
+			 *
+			 * We then print out the name of the "file" at each iteration. 
+			 */ 
+			else if(strcmp(token[0], "ls") == 0)
+			{
+				int i = 0;
+				for(i = 0; i < 16; i++)
+				{
+					if(dir[i].DIR_Attr == 0x01 || dir[i].DIR_Attr == 0x10 || dir[i].DIR_Attr == 0x02)
+					{
+						printf("%s\n", dir[i].DIR_Name);
+					}
+				}
+			}	
+		
+			/* Prints error message in case user enter an improper command after they open the img */ 
+			else printf("Error: command not found\n");
 		}
 		
-		/* Checks and tells the user that the img has not been opened yet */
-		else if(fp == NULL && cmd_str != NULL)
-		{
-			printf("Error: First system image must be opened first\n");
-		}
-		
-		/* Prints error message in case user enter an improper command after they open the img */ 
-		else printf("Error: command not found\n");
+
 		free(working_root);		
 	}
-	return 0;
+	return 0; 
 }
