@@ -204,13 +204,39 @@ int main()
 			}
 			else if (strcmp(token[0], "cd") == 0) //cd only and that means that we're going back into the home directory
 			{
+				int next_cluster;
+				int next_address;
 				fseek(fp, Root_Directory_Address, SEEK_SET);
 				fread(dir, 16, sizeof(struct DirectoryEntry), fp);
-				for (i = 0; i < 16; i++) //going through all the blocks
+				if(token[1] != NULL)
 				{
-					if (dir[i].DIR_Attr == 0x10) //need to check if the user's input matches the name
+					printf("TEST\n");
+
+					/*
+					 * We check each index of the array of structs and try to find one that is a subdirectory, meaning that the attribute at the index
+					 * is 0x10 in hex. If this is true the we compare that with where the user wants to cd into, and if they are the same we find the next cluster
+					 * and then use that cluster and put it into LBAToOffset to find the starting address of the directory. Then we fseek the address and then read 
+					 * and update the array of structs.
+					 */
+
+					/*
+					 * TODO We need to parse the name to get rid of garbage
+					 */
+					for (i = 0; i < 16; i++) //going through all the blocks
 					{
-						printf("%s\n", dir[i].DIR_Name); //set a variable to this since this is a name for the folder
+						if (dir[i].DIR_Attr == 0x10) //need to check if the user's input matches the name
+						{
+							printf("TEST\n");
+							if(strcmp(token[1], dir[i].DIR_Name) == 0) //wont work because we need to get rid of the garbage
+							{
+								printf("TEST, %d\n", dir[i].DIR_FirstClusterLow);
+								next_cluster = NextLB(dir[i].DIR_FirstClusterLow);
+								next_address = LBAToOffset(next_cluster);
+									
+								fseek(fp, next_address, SEEK_SET);
+								fread(dir, 16, sizeof(struct DirectoryEntry), fp);
+							} //set a variable to this since this is a name for the folder
+						}
 					}
 				}
 			}
