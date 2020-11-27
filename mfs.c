@@ -13,12 +13,14 @@
 #include <string.h>
 #include <signal.h>
 #include <stdint.h>
+#include <ctype.h>
+#include <stdbool.h>
 
 #define MAX_NUM_ARGUMENTS 3
 
 #define WHITESPACE " \t\n" // We want to split our command line up into tokens \
 						   // so we need to define what delimits our tokens.   \
-						   // In this case  white space                        \
+						   // Inssignment to expression with array type this case  white space                        \
 						   // will separate the tokens on our command line
 
 #define MAX_COMMAND_SIZE 255 // The maximum command-line size
@@ -68,6 +70,30 @@ int LBAToOffset(int32_t sector)
 	return ((sector - 2) * BPB_BytesPerSec) + (BPB_BytesPerSec * BPB_RsvdSecCnt) + (BPB_NumFATS * BPB_FATz32 * BPB_BytesPerSec);
 }
 
+bool compare(char *IMG_Name, char *input)
+{
+	char expanded_name[12];
+	memset(expanded_name, ' ', 12);
+
+	char *token = strtok(input, ".");
+	strncpy(expanded_name, token, strlen(token));
+	token = strtok(NULL, ".");
+
+	if(token)
+	{
+		strncpy((char*)(expanded_name+8), token, strlen(token));
+	}
+	
+	expanded_name[11] = '\0';
+	
+	int i;
+	for(i = 0; i < 11; i++)
+	{
+		expanded_name[i] = toupper(expanded_name[i]);
+	}
+
+	return strncmp(expanded_name, IMG_Name, 11);
+}
 struct __attribute__((__packed__)) DirectoryEntry
 {
 	char DIR_Name[11];
@@ -81,10 +107,14 @@ struct __attribute__((__packed__)) DirectoryEntry
 
 struct DirectoryEntry dir[16];
 
+
+
 int main()
 {
 	char *cmd_str = (char *)malloc(MAX_COMMAND_SIZE);
 	int i;
+	char parse[12];
+	int next_address;
 	/* Made the variables static so that we can keep the data stored in them outside scope*/
 
 	while (1)
@@ -198,41 +228,61 @@ int main()
 				{
 					if (dir[i].DIR_Attr == 0x01 || dir[i].DIR_Attr == 0x10 || dir[i].DIR_Attr == 0x20)
 					{
-						printf("%s\n", dir[i].DIR_Name); //name will print out with garbage TODO
+						strncpy(parse, dir[i].DIR_Name, 11);
+						parse[11] = '\0'; //NULL terminating string to get rid of garbage
+						printf("%s\n", parse); 
 					}
 				}
 			}
 			else if (strcmp(token[0], "cd") == 0) //cd only and that means that we're going back into the home directory
 			{
-				int next_cluster;
-				int next_address;
-				fseek(fp, Root_Directory_Address, SEEK_SET);
-				fread(dir, 16, sizeof(struct DirectoryEntry), fp);
-				if(token[1] != NULL)
+				if(token[1] == NULL)
 				{
-					printf("TEST\n");
-
+					fseek(fp, Root_Directory_Address, SEEK_SET);
+					fread(dir, 16, sizeof(struct DirectoryEntry), fp);
+				}
+				else if(token[1] != NULL)
+				{
 					/*
 					 * We check each index of the array of structs and try to find one that is a subdirectory, meaning that the attribute at the index
-					 * is 0x10 in hex. If this is true the we compare that with where the user wants to cd into, and if they are the same we find the next cluster
-					 * and then use that cluster and put it into LBAToOffset to find the starting address of the directory. Then we fseek the address and then read 
+					 * is 0x10 in hex. If this is true the we compare that with where the user wants to cd into, and if they are the same we find the address
+					 * by passing the two values int LBAToOffset to find the starting address of the directory. Then we fseek the address and then read 
 					 * and update the array of structs.
 					 */
-
-					/*
-					 * TODO We need to parse the name to get rid of garbage
-					 */
-					for (i = 0; i < 16; i++) //going through all the blocks
+					for(i = 0; i < 16; i++) //going through all the blocks
 					{
 						if (dir[i].DIR_Attr == 0x10) //need to check if the user's input matches the name
 						{
-							printf("TEST\n");
-							if(strcmp(token[1], dir[i].DIR_Name) == 0) //wont work because we need to get rid of the garbage
+							if(strcmp(token[1], "..") == 0)
 							{
-								printf("TEST, %d\n", dir[i].DIR_FirstClusterLow);
-								next_cluster = NextLB(dir[i].DIR_FirstClusterLow);
-								next_address = LBAToOffset(next_cluster);
-									
+								/*
+								 * Check if the first and second character are 0x2e and if they are, that means that the cluster number
+								 * will be that of the parent directory.
+								 *
+								 * We use that cluster number and pass it into the LBAToOffset to get the address of the parent 
+								 * directory and we update the array of structs by fseeking to the address and then reading the contents.
+								 */
+
+								if(dir[i].DIR_Name[0] == 0x2e  && dir[i].DIR_Name[1] == 0x2e)
+								{
+									if(dir[i].DIR_FirstClusterLow == 0x0000) //if this is true that means the parent directory is the root directory
+									{
+										fseek(fp, Root_Directory_Address, SEEK_SET);
+										fread(dir, 16, sizeof(struct DirectoryEntry), fp);
+									}	
+
+									else
+									{
+										next_address = LBAToOffset(dir[i].DIR_FirstClusterLow);		
+										fseek(fp, next_address, SEEK_SET);
+										fread(dir, 16, sizeof(struct DirectoryEntry), fp);
+									}
+								}
+							}
+							else if(compare(dir[i].DIR_Name, token[1]) == 0) //Passes values into compare function which checks to see if what the user enters matches the name  
+							{
+								printf("TEST, %s, %d\n", dir[i].DIR_Name, dir[i].DIR_FirstClusterLow);
+								next_address = LBAToOffset(dir[i].DIR_FirstClusterLow);		
 								fseek(fp, next_address, SEEK_SET);
 								fread(dir, 16, sizeof(struct DirectoryEntry), fp);
 							} //set a variable to this since this is a name for the folder
