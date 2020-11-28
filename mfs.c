@@ -70,7 +70,7 @@ int LBAToOffset(int32_t sector)
 	return ((sector - 2) * BPB_BytesPerSec) + (BPB_BytesPerSec * BPB_RsvdSecCnt) + (BPB_NumFATS * BPB_FATz32 * BPB_BytesPerSec);
 }
 
-bool compare(char *IMG_Name, char *input)
+bool compare(char *IMG_Name, char *input) //function is supposed to parse and make sure we don't get garbage for the print out
 {
 	char expanded_name[12];
 	memset(expanded_name, ' ', 12);
@@ -79,15 +79,15 @@ bool compare(char *IMG_Name, char *input)
 	strncpy(expanded_name, token, strlen(token));
 	token = strtok(NULL, ".");
 
-	if(token)
+	if (token)
 	{
-		strncpy((char*)(expanded_name+8), token, strlen(token));
+		strncpy((char *)(expanded_name + 8), token, strlen(token));
 	}
-	
+
 	expanded_name[11] = '\0';
-	
+
 	int i;
-	for(i = 0; i < 11; i++)
+	for (i = 0; i < 11; i++)
 	{
 		expanded_name[i] = toupper(expanded_name[i]);
 	}
@@ -106,8 +106,6 @@ struct __attribute__((__packed__)) DirectoryEntry
 };
 
 struct DirectoryEntry dir[16];
-
-
 
 int main()
 {
@@ -198,8 +196,16 @@ int main()
 			/* Checks and tells the user that the img has not been opened yet */
 			else if (fp == NULL)
 			{
-				printf("Error: First system image must be opened first\n");
-				continue;
+				//in case they want to exit or quit before opening anything at all
+				if (strcmp(token[0], "quit") == 0 || strcmp(token[0], "exit") == 0)
+				{
+					exit(0);
+				}
+				else
+				{
+					printf("Error: First system image must be opened first\n");
+					continue;
+				}
 			}
 			/* Close File */
 			else if (strcmp(token[0], "close") == 0)
@@ -226,22 +232,24 @@ int main()
 			{
 				for (i = 0; i < 16; i++) //16 since we're reading all the blocks
 				{
+					//extra garbage in the print and apparently in the folder has junk
 					if (dir[i].DIR_Attr == 0x01 || dir[i].DIR_Attr == 0x10 || dir[i].DIR_Attr == 0x20)
 					{
+						//printf("This is the orginal thing - %s\n", dir[i].DIR_Name);
 						strncpy(parse, dir[i].DIR_Name, 11);
 						parse[11] = '\0'; //NULL terminating string to get rid of garbage
-						printf("%s\n", parse); 
+						printf("%s\n", parse);
 					}
 				}
 			}
 			else if (strcmp(token[0], "cd") == 0) //cd only and that means that we're going back into the home directory
 			{
-				if(token[1] == NULL)
+				if (token[1] == NULL) //meaning that we don't have a destination to go to
 				{
 					fseek(fp, Root_Directory_Address, SEEK_SET);
 					fread(dir, 16, sizeof(struct DirectoryEntry), fp);
 				}
-				else if(token[1] != NULL)
+				else if (token[1] != NULL)
 				{
 					/*
 					 * We check each index of the array of structs and try to find one that is a subdirectory, meaning that the attribute at the index
@@ -249,11 +257,11 @@ int main()
 					 * by passing the two values int LBAToOffset to find the starting address of the directory. Then we fseek the address and then read 
 					 * and update the array of structs.
 					 */
-					for(i = 0; i < 16; i++) //going through all the blocks
+					for (i = 0; i < 16; i++) //going through all the blocks
 					{
 						if (dir[i].DIR_Attr == 0x10) //need to check if the user's input matches the name
 						{
-							if(strcmp(token[1], "..") == 0)
+							if (strcmp(token[1], "..") == 0)
 							{
 								/*
 								 * Check if the first and second character are 0x2e and if they are, that means that the cluster number
@@ -263,26 +271,26 @@ int main()
 								 * directory and we update the array of structs by fseeking to the address and then reading the contents.
 								 */
 
-								if(dir[i].DIR_Name[0] == 0x2e  && dir[i].DIR_Name[1] == 0x2e)
+								if (dir[i].DIR_Name[0] == 0x2e && dir[i].DIR_Name[1] == 0x2e)
 								{
-									if(dir[i].DIR_FirstClusterLow == 0x0000) //if this is true that means the parent directory is the root directory
+									if (dir[i].DIR_FirstClusterLow == 0x0000) //if this is true that means the parent directory is the root directory
 									{
 										fseek(fp, Root_Directory_Address, SEEK_SET);
 										fread(dir, 16, sizeof(struct DirectoryEntry), fp);
-									}	
+									}
 
 									else
 									{
-										next_address = LBAToOffset(dir[i].DIR_FirstClusterLow);		
+										next_address = LBAToOffset(dir[i].DIR_FirstClusterLow);
 										fseek(fp, next_address, SEEK_SET);
 										fread(dir, 16, sizeof(struct DirectoryEntry), fp);
 									}
 								}
 							}
-							else if(compare(dir[i].DIR_Name, token[1]) == 0) //Passes values into compare function which checks to see if what the user enters matches the name  
+							else if (compare(dir[i].DIR_Name, token[1]) == 0) //Passes values into compare function which checks to see if what the user enters matches the name
 							{
-								printf("TEST, %s, %d\n", dir[i].DIR_Name, dir[i].DIR_FirstClusterLow);
-								next_address = LBAToOffset(dir[i].DIR_FirstClusterLow);		
+								//printf("TEST, %s, %d\n", dir[i].DIR_Name, dir[i].DIR_FirstClusterLow);
+								next_address = LBAToOffset(dir[i].DIR_FirstClusterLow);
 								fseek(fp, next_address, SEEK_SET);
 								fread(dir, 16, sizeof(struct DirectoryEntry), fp);
 							} //set a variable to this since this is a name for the folder
@@ -293,6 +301,31 @@ int main()
 			else if (strcmp(token[0], "quit") == 0 || strcmp(token[0], "exit") == 0) //these are the commands to exit from the program
 			{
 				exit(0);
+			}
+			else if (strcmp(token[0], "stat") == 0) //user wants to get stat of the filename or directory
+			{
+				if (token[1] != NULL)
+				{
+					for (i = 0; i < 16; i++)
+					{
+						if (dir[i].DIR_Name[0] == 0x2e) //means that we have a directory
+						{
+							if (compare(dir[i].DIR_Name, token[1]) == 0)
+							{
+								//then print out and do stat in here
+								printf("File Attribute\tSize\tStarting Cluster Number\n");
+							}
+						}
+						else if (compare(dir[i].DIR_Name, token[1]) == 0) //finds a file that matches with what the user typed in
+						{
+							printf("File Attribute\tSize\tStarting Cluster Number\n");
+						}
+					}
+				}
+				else //means that they didn't have a filename or directory to get stats from
+				{
+					printf("Error: command not found\n");
+				}
 			}
 			/* Prints error message in case user enter an improper command after they open the img */
 			else
