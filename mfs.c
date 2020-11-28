@@ -1,6 +1,6 @@
 /*
   Name: Zane Malacara & Lawrence Wong
-  ID:  & 1001587603
+  ID: 1001565204 & 1001587603
 */
 
 #define _GNU_SOURCE
@@ -307,29 +307,26 @@ int main()
 				if (token[1] != NULL)
 				{
 					for (i = 0; i < 16; i++)
-					{
-						if (dir[i].DIR_Name[0] == 0x2e) //means that we have a directory
+					{	
+						if (compare(dir[i].DIR_Name, token[1]) == 0)
 						{
-							if (compare(dir[i].DIR_Name, token[1]) == 0)
+							if(dir[i].DIR_Attr == 0x10)
 							{
-								//then print out and do stat in here
 								printf("File Attribute\tSize\tStarting Cluster Number\n");
+								printf("%d\t\t0\t%d\n", dir[i].DIR_Attr, dir[i].DIR_FirstClusterLow);
 							}
-						}
-						else if (compare(dir[i].DIR_Name, token[1]) == 0) //finds a file that matches with what the user typed in
-						{
-							printf("File Attribute\tSize\tStarting Cluster Number\n");
+							else //finds a file that matches with what the user typed in
+							{
+								printf("File Attribute\tSize\tStarting Cluster Number\n");
+								printf("%d\t\t0\t%d\n", dir[i].DIR_Attr, dir[i].DIR_FirstClusterLow);
+							}
 						}
 					}
 				}
-				else //means that they didn't have a filename or directory to get stats from
-				{
-					printf("Error: command not found\n");
-				}
 			}
+		
 			/* Prints error message in case user enter an improper command after they open the img */
-			else
-				printf("Error: command not found\n");
+			else printf("Error: command not found\n");
 		}
 
 		free(working_root);
