@@ -73,9 +73,11 @@ int LBAToOffset(int32_t sector)
 bool compare(char *IMG_Name, char *input) //function is supposed to parse and make sure we don't get garbage for the print out
 {
 	char expanded_name[12];
+	char temp[13];		 //temp char array for the copy of the input that we'll have for when we use compare
+	strcpy(temp, input); //making copy
 	memset(expanded_name, ' ', 12);
 
-	char *token = strtok(input, ".");
+	char *token = strtok(temp, ".");
 	strncpy(expanded_name, token, strlen(token));
 	token = strtok(NULL, ".");
 
@@ -307,10 +309,10 @@ int main()
 				if (token[1] != NULL)
 				{
 					for (i = 0; i < 16; i++)
-					{	
+					{
 						if (compare(dir[i].DIR_Name, token[1]) == 0)
 						{
-							if(dir[i].DIR_Attr == 0x10)
+							if (dir[i].DIR_Attr == 0x10)
 							{
 								printf("File Attribute\tSize\tStarting Cluster Number\n");
 								printf("%d\t\t0\t%d\n", dir[i].DIR_Attr, dir[i].DIR_FirstClusterLow);
@@ -318,15 +320,16 @@ int main()
 							else //finds a file that matches with what the user typed in
 							{
 								printf("File Attribute\tSize\tStarting Cluster Number\n");
-								printf("%d\t\t0\t%d\n", dir[i].DIR_Attr, dir[i].DIR_FirstClusterLow);
+								printf("%d\t\t%d\t%d\n", dir[i].DIR_Attr, dir[i].DIR_FileSize, dir[i].DIR_FirstClusterLow);
 							}
 						}
 					}
 				}
 			}
-		
+
 			/* Prints error message in case user enter an improper command after they open the img */
-			else printf("Error: command not found\n");
+			else
+				printf("Error: command not found\n");
 		}
 
 		free(working_root);
