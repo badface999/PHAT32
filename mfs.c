@@ -115,6 +115,7 @@ int main()
 	int i;
 	char parse[12];
 	int next_address;
+	int counter;
 	/* Made the variables static so that we can keep the data stored in them outside scope*/
 
 	while (1)
@@ -126,8 +127,7 @@ int main()
 		// maximum command that will be read is MAX_COMMAND_SIZE
 		// input something since fgets returns NULL when there
 		// is no input
-		while (!fgets(cmd_str, MAX_COMMAND_SIZE, stdin))
-			;
+		while (!fgets(cmd_str, MAX_COMMAND_SIZE, stdin));
 
 		/* Parse input */
 		char *token[MAX_NUM_ARGUMENTS];
@@ -246,7 +246,7 @@ int main()
 			}
 			else if (strcmp(token[0], "cd") == 0) //cd only and that means that we're going back into the home directory
 			{
-				if (token[1] == NULL) //meaning that we don't have a destination to go to
+			 	if (token[1] == NULL) //meaning that we don't have a destination to go to
 				{
 					fseek(fp, Root_Directory_Address, SEEK_SET);
 					fread(dir, 16, sizeof(struct DirectoryEntry), fp);
@@ -259,7 +259,8 @@ int main()
 					 * by passing the two values int LBAToOffset to find the starting address of the directory. Then we fseek the address and then read 
 					 * and update the array of structs.
 					 */
-					for (i = 0; i < 16; i++) //going through all the blocks
+					counter = 0;
+					for(i = 0; i < 16; i++) //going through all the blocks
 					{
 						if (dir[i].DIR_Attr == 0x10) //need to check if the user's input matches the name
 						{
@@ -280,7 +281,6 @@ int main()
 										fseek(fp, Root_Directory_Address, SEEK_SET);
 										fread(dir, 16, sizeof(struct DirectoryEntry), fp);
 									}
-
 									else
 									{
 										next_address = LBAToOffset(dir[i].DIR_FirstClusterLow);
@@ -291,12 +291,24 @@ int main()
 							}
 							else if (compare(dir[i].DIR_Name, token[1]) == 0) //Passes values into compare function which checks to see if what the user enters matches the name
 							{
-								//printf("TEST, %s, %d\n", dir[i].DIR_Name, dir[i].DIR_FirstClusterLow);
 								next_address = LBAToOffset(dir[i].DIR_FirstClusterLow);
 								fseek(fp, next_address, SEEK_SET);
 								fread(dir, 16, sizeof(struct DirectoryEntry), fp);
 							} //set a variable to this since this is a name for the folder
+							else if(compare(dir[i].DIR_Name, token[1]) == 1)
+							{
+								counter += 1;						
+							}
 						}
+					}
+					if(counter == 1 || counter == 3)
+					{
+						printf("Error: Unable to find directory ");
+						for(i = 1; token[i] != NULL && i < MAX_NUM_ARGUMENTS; i++)
+						{
+							printf("%s ", token[i]);
+						}
+						printf("\n");
 					}
 				}
 			}
