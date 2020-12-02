@@ -113,8 +113,8 @@ struct DirectoryEntry dir[16];
 int main()
 {
 	char *cmd_str = (char *)malloc(MAX_COMMAND_SIZE);
-	int i;
-	uint8_t val;
+	int i, j;
+	int8_t val;
 	char parse[12];
 	int next_address, read_address;
 	int counter, size;
@@ -350,22 +350,9 @@ int main()
 				{
 					if (compare(dir[i].DIR_Name, token[1]) == 0 && dir[i].DIR_Attr != 0x10) //checks if we've have the file and it exists + not a subdirectory
 					{
-						int j;
 						int cluster = dir[i].DIR_FirstClusterLow;
-
-						/*
-						int data[dir[i].DIR_FileSize];
-						int j;
-						int cluster = dir[i].DIR_FirstClusterLow;
-						int address = LBAToOffset(cluster);
-						fseek(fp, address + startpos, SEEK_SET);
-						char *bytes = (char *)malloc(endpos);
-						fread(bytes, endpos, 1, fp);
-						printf("%s\n", bytes);
-						free(bytes);
-						*/
-						//printf("%d\n", cluster);
-						while (cluster != -1)
+						int totalprint = endpos - startpos; //this will make
+						while (cluster != -1 && totalprint != 0)
 						{
 							read_address = LBAToOffset(cluster); //gets address
 
@@ -373,8 +360,10 @@ int main()
 							for (j = startpos; j < endpos; j++)
 							{
 								fread(&val, 1, 1, fp);
-								printf("%d ", val);
+								printf("%x ", val); //we'll be printing out the hexadecimal of what values we got from
+								totalprint--;
 							}
+							// 1 = 0x1
 							printf("\n");
 							cluster = NextLB(cluster); //moves onto the next cluster
 						}
