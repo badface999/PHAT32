@@ -15,8 +15,9 @@
 #include <stdint.h>
 #include <ctype.h>
 #include <stdbool.h>
+#include <limits.h>
 
-#define MAX_NUM_ARGUMENTS 3
+#define MAX_NUM_ARGUMENTS 10
 
 #define WHITESPACE " \t\n" // We want to split our command line up into tokens \
 						   // so we need to define what delimits our tokens.   \
@@ -114,7 +115,7 @@ int main()
 	char *cmd_str = (char *)malloc(MAX_COMMAND_SIZE);
 	int i;
 	char parse[12];
-	int next_address;
+	int next_address, read_address;
 	int counter;
 	/* Made the variables static so that we can keep the data stored in them outside scope*/
 
@@ -127,7 +128,8 @@ int main()
 		// maximum command that will be read is MAX_COMMAND_SIZE
 		// input something since fgets returns NULL when there
 		// is no input
-		while (!fgets(cmd_str, MAX_COMMAND_SIZE, stdin));
+		while (!fgets(cmd_str, MAX_COMMAND_SIZE, stdin))
+			;
 
 		/* Parse input */
 		char *token[MAX_NUM_ARGUMENTS];
@@ -246,7 +248,7 @@ int main()
 			}
 			else if (strcmp(token[0], "cd") == 0) //cd only and that means that we're going back into the home directory
 			{
-			 	if (token[1] == NULL) //meaning that we don't have a destination to go to
+				if (token[1] == NULL) //meaning that we don't have a destination to go to
 				{
 					fseek(fp, Root_Directory_Address, SEEK_SET);
 					fread(dir, 16, sizeof(struct DirectoryEntry), fp);
@@ -260,7 +262,7 @@ int main()
 					 * and update the array of structs.
 					 */
 					counter = 0;
-					for(i = 0; i < 16; i++) //going through all the blocks
+					for (i = 0; i < 16; i++) //going through all the blocks
 					{
 						if (dir[i].DIR_Attr == 0x10) //need to check if the user's input matches the name
 						{
@@ -295,16 +297,16 @@ int main()
 								fseek(fp, next_address, SEEK_SET);
 								fread(dir, 16, sizeof(struct DirectoryEntry), fp);
 							} //set a variable to this since this is a name for the folder
-							else if(compare(dir[i].DIR_Name, token[1]) == 1)
+							else if (compare(dir[i].DIR_Name, token[1]) == 1)
 							{
-								counter += 1;						
+								counter += 1;
 							}
 						}
 					}
-					if(counter == 1 || counter == 3)
+					if (counter == 1 || counter == 3)
 					{
 						printf("Error: Unable to find directory ");
-						for(i = 1; token[i] != NULL && i < MAX_NUM_ARGUMENTS; i++)
+						for (i = 1; token[i] != NULL && i < MAX_NUM_ARGUMENTS; i++)
 						{
 							printf("%s ", token[i]);
 						}
@@ -312,7 +314,7 @@ int main()
 					}
 				}
 			}
-			else if(strcmp(token[0], "quit") == 0 || strcmp(token[0], "exit") == 0) //these are the commands to exit from the program
+			else if (strcmp(token[0], "quit") == 0 || strcmp(token[0], "exit") == 0) //these are the commands to exit from the program
 			{
 				exit(0);
 			}
@@ -338,19 +340,40 @@ int main()
 					}
 				}
 			}
-			else if(strcmp(token[0], "read") == 0)
+			else if (strcmp(token[0], "read") == 0)
 			{
-				for(i = 0; i < 16; i++)
+				char *large;
+				//char large[INT_MAX]; //making big ass array to hold all the data need to malloc with sizeof()
+				int startpos = atoi(token[2]);
+				int endpos = atoi(token[3]); //end postion
+				for (i = 0; i < 16; i++)
 				{
-					if(compare(dir[i].DIR_NAME, token[1] == 0) && dir[i].DIR_Attr != 0x10)
+					large = (char *)malloc(dir[i].DIR_FileSize);
+					if (compare(dir[i].DIR_Name, token[1]) == 0 && dir[i].DIR_Attr != 0x10) //checks if we've have the file and it exists + not a subdirectory
 					{
-						while()
+						int cluster = dir[i].DIR_FirstClusterLow;
+						//printf("%d\n", cluster);
+						while (cluster != -1)
+						{
+							printf("o\n");
+							read_address = LBAToOffset(cluster); //gets address
+							fseek(fp, read_address, SEEK_SET);	 //fseeking to the starting point of where the user wants to see bytes
+							fread(large, 512, 1, fp);
+							cluster = NextLB(cluster); //moves onto the next cluster
+						}
+						continue;
 					}
 				}
+				for (i = startpos; i < endpos; i++)
+				{
+					printf("%c", large[i]);
+				}
+				free(large);
 			}
 
 			/* Prints error message in case user enter an improper command after they open the img */
-			else printf("Error: command not found\n");
+			else
+				printf("Error: command not found\n");
 		}
 
 		free(working_root);
