@@ -114,9 +114,10 @@ int main()
 {
 	char *cmd_str = (char *)malloc(MAX_COMMAND_SIZE);
 	int i;
+	uint8_t val;
 	char parse[12];
 	int next_address, read_address;
-	int counter;
+	int counter, size;
 	/* Made the variables static so that we can keep the data stored in them outside scope*/
 
 	while (1)
@@ -342,33 +343,44 @@ int main()
 			}
 			else if (strcmp(token[0], "read") == 0)
 			{
-				char *large;
 				//char large[INT_MAX]; //making big ass array to hold all the data need to malloc with sizeof()
 				int startpos = atoi(token[2]);
 				int endpos = atoi(token[3]); //end postion
 				for (i = 0; i < 16; i++)
 				{
-					large = (char *)malloc(dir[i].DIR_FileSize);
 					if (compare(dir[i].DIR_Name, token[1]) == 0 && dir[i].DIR_Attr != 0x10) //checks if we've have the file and it exists + not a subdirectory
 					{
+						int j;
 						int cluster = dir[i].DIR_FirstClusterLow;
+
+						/*
+						int data[dir[i].DIR_FileSize];
+						int j;
+						int cluster = dir[i].DIR_FirstClusterLow;
+						int address = LBAToOffset(cluster);
+						fseek(fp, address + startpos, SEEK_SET);
+						char *bytes = (char *)malloc(endpos);
+						fread(bytes, endpos, 1, fp);
+						printf("%s\n", bytes);
+						free(bytes);
+						*/
 						//printf("%d\n", cluster);
 						while (cluster != -1)
 						{
-							printf("o\n");
 							read_address = LBAToOffset(cluster); //gets address
-							fseek(fp, read_address, SEEK_SET);	 //fseeking to the starting point of where the user wants to see bytes
-							fread(large, 512, 1, fp);
+
+							fseek(fp, read_address + startpos, SEEK_SET); //fseeking to the starting point of where the user wants to see bytes
+							for (j = startpos; j < endpos; j++)
+							{
+								fread(&val, 1, 1, fp);
+								printf("%d ", val);
+							}
+							printf("\n");
 							cluster = NextLB(cluster); //moves onto the next cluster
 						}
 						continue;
 					}
 				}
-				for (i = startpos; i < endpos; i++)
-				{
-					printf("%c", large[i]);
-				}
-				free(large);
 			}
 
 			/* Prints error message in case user enter an improper command after they open the img */
