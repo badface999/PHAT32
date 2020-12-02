@@ -312,7 +312,7 @@ int main()
 					}
 				}
 			}
-			else if (strcmp(token[0], "quit") == 0 || strcmp(token[0], "exit") == 0) //these are the commands to exit from the program
+			else if(strcmp(token[0], "quit") == 0 || strcmp(token[0], "exit") == 0) //these are the commands to exit from the program
 			{
 				exit(0);
 			}
@@ -338,10 +338,19 @@ int main()
 					}
 				}
 			}
+			else if(strcmp(token[0], "read") == 0)
+			{
+				for(i = 0; i < 16; i++)
+				{
+					if(compare(dir[i].DIR_NAME, token[1] == 0) && dir[i].DIR_Attr != 0x10)
+					{
+						while()
+					}
+				}
+			}
 
 			/* Prints error message in case user enter an improper command after they open the img */
-			else
-				printf("Error: command not found\n");
+			else printf("Error: command not found\n");
 		}
 
 		free(working_root);
