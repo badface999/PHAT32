@@ -401,14 +401,17 @@ int main()
 					if(compare(dir[i].DIR_Name, token[1]) == 0 && token[2] == NULL)
 					{
 						cluster = dir[i].DIR_FirstClusterLow;
-						read_address = LBAToOffset(cluster);
 						while(cluster != -1)
 						{
-							fseek(fp, read_address, SEEK_SET);
-							fread(str, 512, 1, fp);
-							cluster = NextLB(cluster);
 							read_address = LBAToOffset(cluster);
-							fwrite(str, 512, 1, file_to_write_to);
+							fseek(fp, read_address, SEEK_SET);
+							for(j = 0; j < 512; j++)
+							{
+								fread(&val, 1, 1, fp);
+								printf("%d ", val);
+							}
+							cluster = NextLB(cluster);
+						//	fwrite(str, 512, 1, file_to_write_to);
 						}
 					}
 				}
