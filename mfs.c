@@ -344,7 +344,7 @@ int main()
 				{
 					printf("Error: Please use right format.\n");
 				}
-						}
+			}
 			else if (strcmp(token[0], "read") == 0)
 			{
 				if (token[2] == NULL || token[3] == NULL || token[1] == NULL) //this should account for when the user doesn't enter anything for the file or where to start and end
