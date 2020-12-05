@@ -349,7 +349,6 @@ int main()
 				}
 				else if (token[1] != NULL)
 				{
-					//char large[INT_MAX]; //making big ass array to hold all the data need to malloc with sizeof()
 					for (i = 0; i < 16; i++)
 					{
 						if (compare(dir[i].DIR_Name, token[1]) == 0 && dir[i].DIR_Attr != 0x10) //checks if we've have the file and it exists + not a subdirectory
