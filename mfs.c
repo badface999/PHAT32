@@ -394,25 +394,51 @@ int main()
 			}
 			else if(strcmp(token[0], "get") == 0)
 			{
-				char str[512];
-				file_to_write_to = fopen(token[1], "w");
-				for(i = 0; i < 16; i++)
+				if(token[2] == NULL)
 				{
-					if(compare(dir[i].DIR_Name, token[1]) == 0 && token[2] == NULL)
+					char str[512];
+					file_to_write_to = fopen(token[1], "w");
+					for(i = 0; i < 16; i++)
 					{
-						cluster = dir[i].DIR_FirstClusterLow;
-						read_address = LBAToOffset(cluster);
-						while(cluster != -1)
+						if(compare(dir[i].DIR_Name, token[1]) == 0)
 						{
-							fseek(fp, read_address, SEEK_SET);
-							fread(str, 512, 1, fp);
-							cluster = NextLB(cluster);
+							cluster = dir[i].DIR_FirstClusterLow;
 							read_address = LBAToOffset(cluster);
-							fwrite(str, 512, 1, file_to_write_to);
+							while(cluster != -1)
+							{
+								fseek(fp, read_address, SEEK_SET);
+								fread(str, 512, 1, fp);
+								cluster = NextLB(cluster);
+								read_address = LBAToOffset(cluster);
+								fwrite(str, 512, 1, file_to_write_to);
+							}
 						}
 					}
+					fclose(file_to_write_to);	
 				}
-				fclose(file_to_write_to);	
+				else if(token[2] != NULL)
+				{
+					char str[512];
+					file_to_write_to = fopen(token[2], "w");
+					for(i = 0; i < 16; i++)
+					{
+						if(compare(dir[i].DIR_Name, token[1]) == 0)
+						{
+							cluster = dir[i].DIR_FirstClusterLow;
+							read_address = LBAToOffset(cluster);
+							while(cluster != -1)
+							{
+								fseek(fp, read_address, SEEK_SET);
+								fread(str, 512, 1, fp);
+								cluster = NextLB(cluster);
+								read_address = LBAToOffset(cluster);
+								fwrite(str, 512, 1, file_to_write_to);
+							}
+						}
+					}
+					fclose(file_to_write_to);	
+					
+				}
 			}
 
 			/* Prints error message in case user enter an improper command after they open the img */
