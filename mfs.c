@@ -394,7 +394,7 @@ int main()
 			}
 			else if(strcmp(token[0], "get") == 0)
 			{
-				char str[512];
+				int str[512];
 				file_to_write_to = fopen(token[1], "w");
 				for(i = 0; i < 16; i++)
 				{
@@ -408,10 +408,10 @@ int main()
 							for(j = 0; j < 512; j++)
 							{
 								fread(&val, 1, 1, fp);
-								printf("%d ", val);
+								str[i] = val;
+								fwrite(&str, 1, 1, file_to_write_to);
 							}
 							cluster = NextLB(cluster);
-						//	fwrite(str, 512, 1, file_to_write_to);
 						}
 					}
 				}
