@@ -340,12 +340,16 @@ int main()
 						}
 					}
 				}
-			}
+				else
+				{
+					printf("Error: Please use right format.\n");
+				}
+						}
 			else if (strcmp(token[0], "read") == 0)
 			{
 				if (token[2] == NULL || token[3] == NULL || token[1] == NULL) //this should account for when the user doesn't enter anything for the file or where to start and end
 				{
-					printf("Error: Please use right format\n");
+					printf("Error: Please use right format.\n");
 				}
 				else if (token[1] != NULL)
 				{
@@ -367,7 +371,6 @@ int main()
 									printf("%x ", val); //we'll be printing out the hexadecimal of what values we got from
 									totalprint--;		//decrementing so that we can make sure that we don't print more than specified
 								}
-								// 1 = 0x1
 								printf("\n");
 								cluster = NextLB(cluster); //moves onto the next cluster
 							}
