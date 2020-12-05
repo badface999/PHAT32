@@ -343,31 +343,45 @@ int main()
 			}
 			else if (strcmp(token[0], "read") == 0)
 			{
-				//char large[INT_MAX]; //making big ass array to hold all the data need to malloc with sizeof()
-				int startpos = atoi(token[2]);
-				int endpos = atoi(token[3]); //end postion
-				for (i = 0; i < 16; i++)
+				if (token[2] == NULL || token[3] == NULL || token[1] == NULL) //this should account for when the user doesn't enter anything for the file or where to start and end
 				{
-					if (compare(dir[i].DIR_Name, token[1]) == 0 && dir[i].DIR_Attr != 0x10) //checks if we've have the file and it exists + not a subdirectory
+					printf("Error: Please use right format\n");
+				}
+				else if (token[1] != NULL)
+				{
+					//char large[INT_MAX]; //making big ass array to hold all the data need to malloc with sizeof()
+					for (i = 0; i < 16; i++)
 					{
-						int cluster = dir[i].DIR_FirstClusterLow;
-						int totalprint = endpos - startpos; //this will make
-						while (cluster != -1 && totalprint != 0)
+						if (compare(dir[i].DIR_Name, token[1]) == 0 && dir[i].DIR_Attr != 0x10) //checks if we've have the file and it exists + not a subdirectory
 						{
-							read_address = LBAToOffset(cluster); //gets address
-
-							fseek(fp, read_address + startpos, SEEK_SET); //fseeking to the starting point of where the user wants to see bytes
-							for (j = startpos; j < endpos; j++)
+							int startpos = atoi(token[2]);
+							int endpos = atoi(token[3]); //end postion
+							int cluster = dir[i].DIR_FirstClusterLow;
+							int totalprint = endpos - startpos;		 //this will make
+							while (cluster != -1 && totalprint != 0) //will look through all the clusters and ensures that we only print out the specified amount and not more
 							{
-								fread(&val, 1, 1, fp);
-								printf("%x ", val); //we'll be printing out the hexadecimal of what values we got from
-								totalprint--;
+								read_address = LBAToOffset(cluster);		  //gets address
+								fseek(fp, read_address + startpos, SEEK_SET); //fseeking to the starting point of where the user wants to see bytes
+								for (j = startpos; j < endpos; j++)
+								{
+									fread(&val, 1, 1, fp);
+									printf("%x ", val); //we'll be printing out the hexadecimal of what values we got from
+									totalprint--;		//decrementing so that we can make sure that we don't print more than specified
+								}
+								// 1 = 0x1
+								printf("\n");
+								cluster = NextLB(cluster); //moves onto the next cluster
 							}
-							// 1 = 0x1
-							printf("\n");
-							cluster = NextLB(cluster); //moves onto the next cluster
+							if (compare(dir[i].DIR_Name, token[1]) == 0 && dir[i].DIR_Attr != 0x10)
+							{
+								continue;
+							}
+							else if (compare(dir[i].DIR_Name, token[1]) != 0 || dir[i].DIR_Attr == 0x10)
+							{
+								printf("Error: Please use right format.\n");
+								continue;
+							}
 						}
-						continue;
 					}
 				}
 			}
