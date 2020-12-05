@@ -400,8 +400,7 @@ int main()
 				{
 					if(compare(dir[i].DIR_Name, token[1]) == 0 && token[2] == NULL)
 					{
-						printf("TESTi\n");
-					
+						cluster = dir[i].DIR_FirstClusterLow;
 						while(cluster != -1)
 						{
 							read_address = LBAToOffset(cluster);
