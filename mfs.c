@@ -394,19 +394,21 @@ int main()
 			}
 			else if(strcmp(token[0], "get") == 0)
 			{
-				char str[9999];
+				char str[512];
 				file_to_write_to = fopen(token[1], "w");
 				for(i = 0; i < 16; i++)
 				{
 					if(compare(dir[i].DIR_Name, token[1]) == 0 && token[2] == NULL)
 					{
 						cluster = dir[i].DIR_FirstClusterLow;
+						read_address = LBAToOffset(cluster);
 						while(cluster != -1)
 						{
-							read_address = LBAToOffset(cluster);
 							fseek(fp, read_address, SEEK_SET);
-							fwrite(str, 1, sizeof(str), file_to_write_to);
+							fread(str, 512, 1, fp);
 							cluster = NextLB(cluster);
+							read_address = LBAToOffset(cluster);
+							fwrite(str, 512, 1, file_to_write_to);
 						}
 					}
 				}
