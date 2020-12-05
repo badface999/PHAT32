@@ -118,6 +118,11 @@ int main()
 	char parse[12];
 	int next_address, read_address;
 	int counter, size;
+	int startpos;
+	int endpos;  
+	int cluster;
+	int totalprint; 
+	FILE *file_to_write_to;
 	/* Made the variables static so that we can keep the data stored in them outside scope*/
 
 	while (1)
@@ -129,8 +134,7 @@ int main()
 		// maximum command that will be read is MAX_COMMAND_SIZE
 		// input something since fgets returns NULL when there
 		// is no input
-		while (!fgets(cmd_str, MAX_COMMAND_SIZE, stdin))
-			;
+		while (!fgets(cmd_str, MAX_COMMAND_SIZE, stdin));
 
 		/* Parse input */
 		char *token[MAX_NUM_ARGUMENTS];
@@ -345,24 +349,24 @@ int main()
 					printf("Error: Please use right format.\n");
 				}
 			}
-			else if (strcmp(token[0], "read") == 0)
+			else if(strcmp(token[0], "read") == 0)
 			{
 				//this should account for when the user doesn't enter anything for the file or where to start and end
-				if (token[2] == NULL || token[3] == NULL || token[1] == NULL)
+				if(token[2] == NULL || token[3] == NULL || token[1] == NULL)
 				{
 					printf("Error: Please use right format.\n");
 				}
-				else if (token[1] != NULL)
+				else if(token[1] != NULL)
 				{
-					for (i = 0; i < 16; i++)
+					for(i = 0; i < 16; i++)
 					{
-						if (compare(dir[i].DIR_Name, token[1]) == 0 && dir[i].DIR_Attr != 0x10) //checks if we've have the file and it exists + not a subdirectory
+						if(compare(dir[i].DIR_Name, token[1]) == 0 && dir[i].DIR_Attr != 0x10) //checks if we've have the file and it exists + not a subdirectory
 						{
-							int startpos = atoi(token[2]);
-							int endpos = atoi(token[3]); //end postion
-							int cluster = dir[i].DIR_FirstClusterLow;
-							int totalprint = endpos - startpos;		 //this will make
-							while (cluster != -1 && totalprint != 0) //will look through all the clusters and ensures that we only print out the specified amount and not more
+							startpos = atoi(token[2]);
+							endpos = atoi(token[3]); //end postion
+							cluster = dir[i].DIR_FirstClusterLow;
+							totalprint = endpos - startpos;		 //this will make
+							while(cluster != -1 && totalprint != 0) //will look through all the clusters and ensures that we only print out the specified amount and not more
 							{
 								read_address = LBAToOffset(cluster);		  //gets address
 								fseek(fp, read_address + startpos, SEEK_SET); //fseeking to the starting point of where the user wants to see bytes
@@ -375,11 +379,11 @@ int main()
 								printf("\n");
 								cluster = NextLB(cluster); //moves onto the next cluster
 							}
-							if (compare(dir[i].DIR_Name, token[1]) == 0 && dir[i].DIR_Attr != 0x10)
+							if(compare(dir[i].DIR_Name, token[1]) == 0 && dir[i].DIR_Attr != 0x10)
 							{
 								continue;
 							}
-							else if (compare(dir[i].DIR_Name, token[1]) != 0 || dir[i].DIR_Attr == 0x10)
+							else if(compare(dir[i].DIR_Name, token[1]) != 0 || dir[i].DIR_Attr == 0x10)
 							{
 								printf("Error: Please use right format.\n");
 								continue;
@@ -388,10 +392,30 @@ int main()
 					}
 				}
 			}
+			else if(strcmp(token[0], "get") == 0)
+			{
+				char str[9999];
+				file_to_write_to = fopen(token[1], "w");
+				for(i = 0; i < 16; i++)
+				{
+					if(compare(dir[i].DIR_Name, token[1]) == 0 && token[2] == NULL)
+					{
+						printf("TESTi\n");
+					
+						while(cluster != -1)
+						{
+							read_address = LBAToOffset(cluster);
+							fseek(fp, read_address, SEEK_SET);
+							fwrite(str, 1, sizeof(str), file_to_write_to);
+							cluster = NextLB(cluster);
+						}
+					}
+				}
+				fclose(file_to_write_to);	
+			}
 
 			/* Prints error message in case user enter an improper command after they open the img */
-			else
-				printf("Error: command not found\n");
+			else printf("Error: command not found\n");
 		}
 
 		free(working_root);
