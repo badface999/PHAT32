@@ -323,6 +323,13 @@ int main()
 			{
 				exit(0);
 			}
+
+			/*
+			 * Will go into the statement when the user wants to see the statistics of the file or directory they choose
+			 * 
+			 * Pass the string that is in the struct to the compare fucntion that will parse the string and then it compares it to the user input.
+			 * If true then it will print the desired data. 
+			 */
 			else if (strcmp(token[0], "stat") == 0) //user wants to get stat of the filename or directory
 			{
 				if (token[1] != NULL)
@@ -331,7 +338,7 @@ int main()
 					{
 						if (compare(dir[i].DIR_Name, token[1]) == 0)
 						{
-							if (dir[i].DIR_Attr == 0x10)
+							if (dir[i].DIR_Attr == 0x10) //checks if it a directory
 							{
 								printf("File Attribute\tSize\tStarting Cluster Number\n");
 								printf("%d\t\t0\t%d\n", dir[i].DIR_Attr, dir[i].DIR_FirstClusterLow);
@@ -349,6 +356,10 @@ int main()
 					printf("Error: Please use right format.\n");
 				}
 			}
+
+			/*
+			 * 
+			 */
 			else if(strcmp(token[0], "read") == 0)
 			{
 				//this should account for when the user doesn't enter anything for the file or where to start and end
@@ -392,6 +403,22 @@ int main()
 					}
 				}
 			}
+
+			/*
+			 * In this command the user wants to get a file in their current working directory.
+			 *
+			 * To do this we have to check if token[2] is NULL because if it is, that tells us that the user
+			 * does no want to rename the file to something else. If token[2] is not NULL then that tells us 
+			 * they do want to rename the file.
+			 *
+			 * First we open a new file to write to. Then we run through a for loop to compare what file the user wants to get
+			 * we set cluster to the first cluster of the file then go through a while loop until the cluster is -1, meaning that 
+			 * we have reached the end of the file
+			 *
+			 * Inside the while loop we get the address of the cluster the fseek that address and then read the whole file with fread 
+			 * and store the data inside an array then write that data to a file, the file name we write to will be the same unless the
+			 * user wants to rename the file.
+			 */
 			else if(strcmp(token[0], "get") == 0)
 			{
 				if(token[2] == NULL)
@@ -403,13 +430,12 @@ int main()
 						if(compare(dir[i].DIR_Name, token[1]) == 0)
 						{
 							cluster = dir[i].DIR_FirstClusterLow;
-							read_address = LBAToOffset(cluster);
 							while(cluster != -1)
 							{
+								read_address = LBAToOffset(cluster);
 								fseek(fp, read_address, SEEK_SET);
 								fread(str, 512, 1, fp);
 								cluster = NextLB(cluster);
-								read_address = LBAToOffset(cluster);
 								fwrite(str, 512, 1, file_to_write_to);
 							}
 						}
@@ -425,13 +451,12 @@ int main()
 						if(compare(dir[i].DIR_Name, token[1]) == 0)
 						{
 							cluster = dir[i].DIR_FirstClusterLow;
-							read_address = LBAToOffset(cluster);
 							while(cluster != -1)
 							{
+								read_address = LBAToOffset(cluster);
 								fseek(fp, read_address, SEEK_SET);
 								fread(str, 512, 1, fp);
 								cluster = NextLB(cluster);
-								read_address = LBAToOffset(cluster);
 								fwrite(str, 512, 1, file_to_write_to);
 							}
 						}
