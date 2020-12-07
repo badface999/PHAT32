@@ -241,12 +241,12 @@ int main()
 			{
 				for (i = 0; i < 16; i++) //16 since we're reading all the blocks
 				{
+					strncpy(parse, dir[i].DIR_Name, 11);
+					parse[11] = '\0'; //NULL terminating string to get rid of garbage
 					//extra garbage in the print and apparently in the folder has junk
-					if (dir[i].DIR_Attr == 0x01 || dir[i].DIR_Attr == 0x10 || dir[i].DIR_Attr == 0x20)
+					if (dir[i].DIR_Attr == 0x01 || dir[i].DIR_Attr == 0x10 || dir[i].DIR_Attr == 0x20 && parse[0] != 0xffffffe5)
 					{
 						//printf("This is the orginal thing - %s\n", dir[i].DIR_Name);
-						strncpy(parse, dir[i].DIR_Name, 11);
-						parse[11] = '\0'; //NULL terminating string to get rid of garbage
 						printf("%s\n", parse);
 					}
 				}
@@ -423,7 +423,7 @@ int main()
 			{
 				if(token[2] == NULL)
 				{
-					char str[512];
+					char str[BPB_BytesPerSec];
 					file_to_write_to = fopen(token[1], "w");
 					for(i = 0; i < 16; i++)
 					{
@@ -434,9 +434,9 @@ int main()
 							{
 								read_address = LBAToOffset(cluster);
 								fseek(fp, read_address, SEEK_SET);
-								fread(str, 512, 1, fp);
+								fread(str, BPB_BytesPerSec, 1, fp);
 								cluster = NextLB(cluster);
-								fwrite(str, 512, 1, file_to_write_to);
+								fwrite(str, BPB_BytesPerSec, 1, file_to_write_to);
 							}
 						}
 					}
@@ -444,8 +444,9 @@ int main()
 				}
 				else if(token[2] != NULL)
 				{
-					char str[512];
+					char str[BPB_BytesPerSec];
 					file_to_write_to = fopen(token[2], "w");
+					printf("Opening the new file\n");
 					for(i = 0; i < 16; i++)
 					{
 						if(compare(dir[i].DIR_Name, token[1]) == 0)
@@ -455,9 +456,9 @@ int main()
 							{
 								read_address = LBAToOffset(cluster);
 								fseek(fp, read_address, SEEK_SET);
-								fread(str, 512, 1, fp);
+								fread(str, BPB_BytesPerSec, 1, fp);
 								cluster = NextLB(cluster);
-								fwrite(str, 512, 1, file_to_write_to);
+								fwrite(str, BPB_BytesPerSec, 1, file_to_write_to);
 							}
 						}
 					}
